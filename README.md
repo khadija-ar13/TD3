@@ -1,68 +1,70 @@
-# Spatial Database - TD 2
+# Spatial Database - TD 3
 
-This README provides instructions and information for completing the exercises in **TD-2: Creating Tables with Spatial Columns**, as part of the course on **Spatial Databases**.
+This README provides instructions for completing the exercises in **TD-3: Spatial SQL Functions**, as part of the course on **Spatial Databases**.
 
 ## Table of Contents
 1. [Overview](#overview)
 2. [Tasks](#tasks)
-   - [Task 1: Creating Spatial Tables (Points)](#task-1-creating-spatial-tables-points)
-   - [Task 2: Creating Spatial Tables (Polygons)](#task-2-creating-spatial-tables-polygons)
-   - [Task 3: Creating Spatial Tables (Lines)](#task-3-creating-spatial-tables-lines)
+   - [Task 1: Import Shapefile into PostGIS](#task-1-import-shapefile-into-postgis)
+   - [Task 2: Query Parcels](#task-2-query-parcels)
+   - [Task 3: Determine Fire Point (Centroid)](#task-3-determine-fire-point-centroid)
+   - [Task 4: Identify Risk Zone](#task-4-identify-risk-zone)
+   - [Task 5: Advanced Queries](#task-5-advanced-queries)
 3. [Tools and Requirements](#tools-and-requirements)
 
 ## Overview
-This tutorial focuses on creating and managing spatial tables using PostgreSQL/PostGIS and integrating them with QGIS. The tasks involve creating tables with spatial columns, inserting spatial data, and querying them using PgAdmin.
+This exercise involves using PostGIS to analyze spatial data related to parcels in Florida. You will determine the parcels located within a 1 km radius of a fire point and calculate relevant spatial metrics.
 
 ## Tasks
 
-### Task 1: Creating Spatial Tables (Points)
-1. Use PgAdmin to create a table named `points_of_interests` with a geometry column of type `Point`:
-    ```sql
-    CREATE TABLE points_of_interests (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255),
-        geom GEOMETRY(Point, 4326)
-    );
-    ```
-2. Insert data into this table using QGIS:
-    - Right-click on PostgreSQL in the QGIS explorer panel and create a new connection.
-    - Provide the necessary database connection details and test the connection.
-    - Once connected, double-click the `points_of_interests` table to add it as a layer in QGIS.
-    - Switch to editing mode, add points, and save your changes.
+### Task 1: Import Shapefile into PostGIS
+1. Download the shapefile of Florida parcels from [this link](https://maps.leegov.com/datasets/80708a2f5f56426f94c8be97c182176b/about).
+2. Use the **PostGIS Shapefile Import/Export Manager** to import the shapefile:
+   - Open the Import/Export Manager (search "Shapefile Import" on Windows).
+   - Select the shapefile and import it into a PostgreSQL table.
 
-3. Verify the data in PgAdmin by running:
+### Task 2: Query Parcels
+1. In **pgAdmin**, run the following queries:
     ```sql
-    SELECT * FROM points_of_interests;
+    SELECT COUNT(*) FROM parcels;
+    ```
+    ```sql
+    SELECT * FROM parcels LIMIT 5;
     ```
 
-### Task 2: Creating Spatial Tables (Polygons)
-1. Use PgAdmin to create a table named `zones_protegees` with a geometry column of type `Polygon`:
+### Task 3: Determine Fire Point (Centroid)
+1. Identify the centroid of a specific parcel (e.g., `gid = 462273`):
     ```sql
-    CREATE TABLE zones_protegees (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255),
-        geom GEOMETRY(Polygon, 4326)
-    );
-    ```
-2. Insert data into this table using QGIS, following the same steps as in Task 1.
-3. Verify the data in PgAdmin by running:
-    ```sql
-    SELECT * FROM zones_protegees;
+    SELECT ST_Centroid(geom) AS fire_point
+    FROM parcels
+    WHERE gid = 462273;
     ```
 
-### Task 3: Creating Spatial Tables (Lines)
-1. Follow a similar approach to create a table with a geometry column of type `LINESTRING`. Adjust the table creation SQL command and QGIS workflow accordingly.
+### Task 4: Identify Risk Zone
+1. Use **QGIS** to duplicate the `parcels` layer and name it `fire-risk`.
+2. Apply a filter to identify parcels within 1 km of the fire point:
+    - Filter expression:
+      ```sql
+      ST_DWithin(geom, (SELECT ST_Centroid(geom) FROM "public"."parcels" WHERE gid = 462273), 1000)
+      ```
+3. Change the symbology of the layer to visualize the risk zones.
+4. Add a second fire point (`gid = 460957`) and update the filter to include both parcels.
+
+### Task 5: Advanced Queries
+1. Use **pgAdmin** (or QGIS query editor) to answer the following:
+   - How many parcels are within 1 km of the two fire points (`gid = 460957` and `462273`)?
+   - What is the total area of parcels close to the fire points?
 
 ## Tools and Requirements
-- **PgAdmin**: For managing PostgreSQL and PostGIS databases.
-- **PostGIS**: PostgreSQL extension for spatial databases.
-- **QGIS**: For spatial data visualization and editing.
-- **SQL**: For querying and managing the spatial tables.
+- **PgAdmin**: For executing SQL queries.
+- **PostGIS**: PostgreSQL extension for spatial operations.
+- **QGIS**: For visualizing and editing spatial data.
+- **Shapefile**: Dataset of Florida parcels.
 
 ## Notes
-- Ensure PostGIS is enabled in your PostgreSQL database.
-- Always test connections between QGIS and the PostgreSQL database before proceeding with data editing.
+- Refer to the [PostGIS Documentation](https://postgis.net/docs/reference.html) for details on spatial functions.
+- Ensure PostGIS is properly configured in your PostgreSQL setup.
 
 ---
 
-For any questions or issues, please refer to your instructor or course materials.
+For questions or clarifications, contact your instructor or refer to course materials.
